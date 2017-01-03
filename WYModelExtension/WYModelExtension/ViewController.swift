@@ -34,6 +34,8 @@ class ViewController: UIViewController {
         print(model2.models)
 
         
+        let dict2 = model2.tranToDict()
+        printDebug(dict2)
         
         // Do any additional setup after loading the view, typically from a nib.
     }

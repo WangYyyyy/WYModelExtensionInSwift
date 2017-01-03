@@ -10,6 +10,8 @@ import Foundation
 
 let disabledKinds = [ImplicitlyUnwrappedOptional<Int>.self, Optional<Int>.self, ImplicitlyUnwrappedOptional<Double>.self, Optional<Double>.self, ImplicitlyUnwrappedOptional<Bool>.self, Optional<Bool>.self] as [Any.Type]
 
+let transformAbleKinds = [ImplicitlyUnwrappedOptional<String>.self, Optional<String>.self, String.self, ImplicitlyUnwrappedOptional<Int>.self, Optional<Int>.self, Int.self, ImplicitlyUnwrappedOptional<Float>.self, Optional<Float>.self, Float.self, ImplicitlyUnwrappedOptional<Double>.self, Optional<Double>.self, Double.self, ImplicitlyUnwrappedOptional<Bool>.self, Optional<Bool>.self, Bool.self] as [Any.Type]
+
 let bundleName = Bundle.main.infoDictionary![String(kCFBundleNameKey)]!
 
 /// 是否开启日志打印
@@ -304,7 +306,6 @@ extension NSObject {
                 superClass.setValue(objArray, forKey: variateName)
             }
         }
-        
     }
     
     //MARK:检查属性是否可用
@@ -325,8 +326,108 @@ extension NSObject {
                 break
             }
         }
-        
         return isAble
+    }
+    
+    //MARK: 将模型转换成dict结构体
+    
+    /// 将模型转换成dict结构体
+    ///
+    /// - Returns:
+    func tranToDict() -> Dictionary<String, Any> {
+        var mainDict = Dictionary<String, Any>.init()
+        let mir = Mirror.init(reflecting: self)
+        let mirChildren = mir.children
+        printDebug("➡️当前类的属性总数为\(mirChildren.count)")
+        for p in mirChildren {
+            if p.label == nil {
+                printDebug("⚠️->> 属性名为空不处理")
+                continue
+            }
+            let vMir = Mirror.init(reflecting: p.value)
+            let pType = vMir.subjectType
+            let isDirect = checkTypeIsAbleForTransform(type: pType, veriateName: p.label!)
+            if isDirect {
+                printDebug("✅\(p.label!)的数据类型为\(pType), 无需处理直接赋值")
+                mainDict.updateValue(p.value, forKey: p.label!)
+            }else {
+                //判断是否是Array
+                let kindOfVariate = "\(vMir.subjectType)"
+                let range = kindOfVariate.range(of: "Array")
+                if range == nil {
+                    printDebug("↩️\(p.label!)的数据类型为\(pType), 进行单个model处理")
+                    let subDict = structureDictForModel(model: p.value, variateName: p.label!)
+                    mainDict.updateValue(subDict, forKey: p.label!)
+                }else {
+                    printDebug("↩️\(p.label!)的数据类型为\(pType), 进行数组处理")
+                    let subArray = structureDictsArrayForModelsArray(models: p.value, variateName: p.label!)
+                    mainDict.updateValue(subArray, forKey: p.label!)
+                }
+            }
+        }
+        
+        return mainDict
+    }
+    
+    //MARK: 通过model构造dict
+    func structureDictForModel(model:Any, variateName:String) -> Dictionary<String, Any> {
+        var mainDict = Dictionary<String, Any>.init()
+        let mir = Mirror.init(reflecting: model)
+        let mirChildren = mir.children
+        printDebug("➡️\(variateName)的属性总数为\(mirChildren.count)")
+        for p in mirChildren {
+            if p.label == nil {
+                printDebug("⚠️->> 属性名为空不处理")
+                continue
+            }
+            let vMir = Mirror.init(reflecting: p.value)
+            let pType = vMir.subjectType
+            let isDirect = checkTypeIsAbleForTransform(type: pType, veriateName: p.label!)
+            if isDirect {
+                printDebug("✅\(p.label!)的数据类型为\(pType), 无需处理直接赋值")
+                mainDict.updateValue(p.value, forKey: p.label!)
+            }else {
+                //判断是否是Array
+                let kindOfVariate = "\(vMir.subjectType)"
+                let range = kindOfVariate.range(of: "Array")
+                if range == nil {
+                    printDebug("↩️\(p.label!)的数据类型为\(pType), 进行单个model处理")
+                    let subDict = structureDictForModel(model: p.value, variateName: p.label!)
+                    mainDict.updateValue(subDict, forKey: p.label!)
+                }else {
+                    printDebug("↩️\(p.label!)的数据类型为\(pType), 进行数组处理")
+                    let subArray = structureDictsArrayForModelsArray(models: p.value, variateName: p.label!)
+                    mainDict.updateValue(subArray, forKey: p.label!)
+                }
+            }
+        }
+        return mainDict
+    }
+    
+    //MARK: 通过model的数组构造dict的数组
+    func structureDictsArrayForModelsArray(models:Any, variateName:String) -> Array<Dictionary<String, Any>> {
+        var mainArray = Array<Dictionary<String, Any>>.init()
+        let modelsArray = models as? Array<Any>
+        if modelsArray == nil {
+            printDebug("⚠️\(variateName)的数组转换失败!")
+            return mainArray
+        }
+        printDebug("➡️\(variateName)的数组总数为\(modelsArray!.count)")
+        for model in modelsArray! {
+            let dict = structureDictForModel(model: model, variateName: variateName)
+            mainArray.append(dict)
+        }
+        return mainArray
+    }
+    
+    //MARK: 检查类型是否可以直接转换
+    func checkTypeIsAbleForTransform(type:Any.Type, veriateName:String) -> Bool {
+        for kind in transformAbleKinds {
+            if type == kind {
+                return true
+            }
+        }
+        return false
     }
 }
 
