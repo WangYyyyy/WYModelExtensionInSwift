@@ -8,21 +8,20 @@
 
 import Foundation
 
-let disabledKinds = [ImplicitlyUnwrappedOptional<Int>.self, Optional<Int>.self, ImplicitlyUnwrappedOptional<Double>.self, Optional<Double>.self, ImplicitlyUnwrappedOptional<Bool>.self, Optional<Bool>.self] as [Any.Type]
+let disabledKinds = [ImplicitlyUnwrappedOptional<Int>.self, Swift.Optional<Int>.self, ImplicitlyUnwrappedOptional<Double>.self, Swift.Optional<Double>.self, ImplicitlyUnwrappedOptional<Bool>.self, Swift.Optional<Bool>.self] as [Any.Type]
 
-let transformAbleKinds = [ImplicitlyUnwrappedOptional<String>.self, Optional<String>.self, String.self, ImplicitlyUnwrappedOptional<Int>.self, Optional<Int>.self, Int.self, ImplicitlyUnwrappedOptional<Float>.self, Optional<Float>.self, Float.self, ImplicitlyUnwrappedOptional<Double>.self, Optional<Double>.self, Double.self, ImplicitlyUnwrappedOptional<Bool>.self, Optional<Bool>.self, Bool.self] as [Any.Type]
+let transformAbleKinds = [ImplicitlyUnwrappedOptional<String>.self, Swift.Optional<String>.self, String.self, ImplicitlyUnwrappedOptional<Int>.self, Swift.Optional<Int>.self, Int.self, ImplicitlyUnwrappedOptional<Float>.self, Swift.Optional<Float>.self, Float.self, ImplicitlyUnwrappedOptional<Double>.self, Swift.Optional<Double>.self, Double.self, ImplicitlyUnwrappedOptional<Bool>.self, Swift.Optional<Bool>.self, Bool.self] as [Any.Type]
 
 let bundleName = Bundle.main.infoDictionary![String(kCFBundleNameKey)]!
 
 /// 是否开启日志打印
 var logEnable_WYModelExt = true
 
-func printDebug(_ item:Any) {
+func printDebug(_ items: Any...) {
     
     if logEnable_WYModelExt {
-        print(item)
+        print(items)
     }
-    
 }
 
 extension NSObject {
@@ -75,7 +74,7 @@ extension NSObject {
         return obj
     }
     
-    convenience init(creatObjectByDictionary:Any) {
+    @objc convenience init(creatObjectByDictionary:Any) {
         self.init()
         
         let dictionary = creatObjectByDictionary as? Dictionary<String, Any>
@@ -112,6 +111,7 @@ extension NSObject {
                         //TODO:检查属性
                         let isAble = self.checkTypeIsAble(type: vMir.subjectType, variateName: p.label!)
                         if isAble {
+                            
                             self.setValue(value, forKey: p.label!)
                         }
                         
@@ -233,7 +233,7 @@ extension NSObject {
     
     //MARK:递归set属性对象的各个值 包括实例化对象.(数组处理)
     
-    /// 递归set属性对象的各个值 包括实例化对象.(数组处理) 
+    /// 递归set属性对象的各个值 包括实例化对象.(数组处理)
     ///  Array<Array<Obj>> 嵌套 支持性未知
     ///  Array<obj>  obj中属性嵌套subObj对象 支持性未知
     ///
@@ -278,15 +278,15 @@ extension NSObject {
                             let vMir = Mirror.init(reflecting: p.value)
                             let secDict = value as? Dictionary<String, Any>
                             let secArray = value as? Array<Any>
-//                            let kindOfVariate = "\(vMir.subjectType)"
+                            //                            let kindOfVariate = "\(vMir.subjectType)"
                             if secDict != nil {
                                 //TODO:↩️当前数据的属性为一个对象, 未知 EX: Array<obj>  obj中属性嵌套subObj对象
                                 printDebug("↩️当前数据的属性:\(p.label!)为一个对象, 未知 EX: Array<obj>  obj中属性嵌套subObj对象")
-                                self.setDataWithDict(dict: secDict!, kindOfVariate: kindOfVariate, variateName: p.label!, superClass: newobj)
+                                self.setDataWithDict(dict: secDict!, kindOfVariate: "\(vMir.subjectType)", variateName: p.label!, superClass: newobj)
                             }else if secArray != nil {
                                 //TODO:↩️当前数据的属性为一个数组, 未知 EX: Array<Array<obj>>
                                 printDebug("↩️当前数据的属性:\(p.label!)为一个数组, 未知 EX: Array<Array<obj>>")
-                                self.setDataWithArray(array: secArray!, kindOfVariate: kindOfVariate, variateName: p.label!, superClass: newobj)
+                                self.setDataWithArray(array: secArray!, kindOfVariate: "\(vMir.subjectType)", variateName: p.label!, superClass: newobj)
                             }else if value == nil {
                                 //TODO:⚠️当前数据的属性为空
                                 printDebug("⚠️当前数据的属性:\(p.label!)为空")
